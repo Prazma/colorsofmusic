@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<style>
+			body {
+				background-color: #ffffff;
+				margin: 0;
+				overflow: hidden;
+			}
+		</style>
+	</head>
+	<body>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/94/three.min.js"></script>
+		<script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
+		<input type="file" id="thefile" onchange="triggerHappy()" accept="audio/*" />
+  		<audio id="audio" controls></audio>
+		<script>
+			var camera, scene, renderer;
+			var geometry, material, mesh;
+			var controls;
+			var allGeomteries = [];
+			
+			var r,g,b;
+			
+			
+			
+			
+			function init() {
+
+				camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 100 );
+				camera.position.z = 9;
+				camera.position.y = 11;
+                camera.rotation.x = -0.7;
+                
+                controls = new THREE.OrbitControls( camera );
+                controls.update();
+                
+                r = 23;
+                g = 30;
+                b = 50;
+                var xpos = -2*6/4;
+                var zpos = -2*6/4;
+                
+				scene = new THREE.Scene();
+				scene.background = new THREE.Color( 0x000000 );
+				
+				for( i=0;i<128;i++ ) {
+				    geometry = new THREE.BoxGeometry( 0.5,1,0.5 );
+				    material = new THREE.MeshBasicMaterial( { color: 'rgb('+r+','+g+','+b+')', wireframe: false } );
+                    
+                    r += 3;
+                    g += 2;
+                    b += 1;
+                    
+				    mesh = new THREE.Mesh( geometry, material );
+				    scene.add( mesh );
+				    allGeomteries.push( mesh );
+				    mesh.position.x = xpos;
+				    mesh.position.z = zpos;
+					
+				    
+				    xpos += 0.5;
+				    if( xpos > 1.5 ) {
+				        xpos = -2*6/4;
+				        zpos += 0.5;
+				    }
+				}
+				
+				var light = new THREE.PointLight( 0xff0000, 1, 100 );
+				light.position.set( 50, 50, 50 );
+				scene.add( light );
+
+				renderer = new THREE.WebGLRenderer( { antialias: true } );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				document.body.appendChild( renderer.domElement );			
+				
+			}
+
+			function animate( time ) {
+				
+				renderer.render( scene, camera );
+				controls.update();
+				requestAnimationFrame( animate );
+			}
+
+			window.onload = function() {
+  
+  var file = document.getElementById("thefile");
+  var audio = document.getElementById("audio");
+  
+  file.onchange = function() {
+    var files = this.files;
+    audio.src = URL.createObjectURL(files[0]);
+    audio.load();
+    audio.play();
+    var context = new AudioContext();
+    var src = context.createMediaElementSource(audio);
+    var analyser = context.createAnalyser();
+
+    src.connect(analyser);
+    analyser.connect(context.destination);
+
+    analyser.fftSize = 256;
+
+    var bufferLength = analyser.frequencyBinCount;
+
+    var dataArray = new Uint8Array(bufferLength);
+
+    function renderFrame() {
+      requestAnimationFrame(renderFrame);
+
+      analyser.getByteFrequencyData(dataArray);
+
+      for (var i = 0; i < bufferLength; i++) {
+        allGeomteries[i].scale.y = dataArray[i]*0.02;
+    		var colorX = "0x" + componentToHex(Math.round(i + (dataArray[i]+dataArray[i]) - i)) + componentToHex(Math.round(i+ (dataArray[i])/2)) + componentToHex(Math.round(i+ (dataArray[10]-dataArray[30]) ));
+    		console.log(colorX);
+        allGeomteries[i].material.color.setHex( colorX );
+      }
+    }
+    
+    function componentToHex(c) {
+    	var hex = c.toString(16);
+    	return hex.length == 1 ? "0" + hex : hex;
+    }
+
+    audio.play();
+    renderFrame();
+  };
+};
+
+			init();
+			requestAnimationFrame( animate );
+
+		</script>
+	</body>
+</html>
